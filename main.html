@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Chat Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo-container">
+                <i class="fab fa-whatsapp logo"></i>
+                <div class="header-title">
+                    <h1>WhatsApp Chat Analysis</h1>
+                    <p class="subtitle">Gain insights from your conversations</p>
+                </div>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+
+        <div class="main-content">
+            <div class="input-section" id="inputSection">
+                <div class="form-group">
+                    <label for="myNameInput"><i class="fas fa-user"></i> Your Name</label>
+                    <input type="text" id="myNameInput" class="form-control" placeholder="Enter your name as it appears in WhatsApp" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="friendNameInput"><i class="fas fa-user-friends"></i> Friend's Name</label>
+                    <input type="text" id="friendNameInput" class="form-control" placeholder="Enter your friend's name as it appears in WhatsApp" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fileInput"><i class="fas fa-file-alt"></i> Chat File</label>
+                    <div class="file-input-container">
+                        <input type="file" id="fileInput" class="file-input" accept=".txt" required>
+                        <div class="file-input-label">
+                            <span id="fileInputText">Select exported WhatsApp chat (.txt)</span>
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="error-message" id="errorMessage"></div>
+                
+                <button id="startAnalysisButton" class="btn" onclick="startAnalysis()">
+                    <i class="fas fa-chart-line"></i> Analyze Chat
+                </button>
+                
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> How to export your WhatsApp chat:</h3>
+                    <ol>
+                        <li>Open your WhatsApp conversation</li>
+                        <li>Tap on the contact name at the top</li>
+                        <li>Scroll down and select "Export Chat"</li>
+                        <li>Choose "Without Media"</li>
+                        <li>Share the file to your computer or device</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="overview">
+                        <i class="fas fa-chart-pie"></i> Overview
+                    </button>
+                    <button class="tab-btn" data-tab="emojis">
+                        <i class="fas fa-smile"></i> Emojis
+                    </button>
+                    <button class="tab-btn" data-tab="messages">
+                        <i class="fas fa-comment"></i> Messages
+                    </button>
+                    <button class="tab-btn" data-tab="words">
+                        <i class="fas fa-font"></i> Words
+                    </button>
+                    <button class="tab-btn" data-tab="activity">
+                        <i class="fas fa-calendar"></i> Activity
+                    </button>
+                    <button class="tab-btn" data-tab="insights">
+                        <i class="fas fa-lightbulb"></i> Insights
+                    </button>
+                    <button class="tab-btn" data-tab="wordcloud">
+                        <i class="fas fa-cloud"></i> Word Cloud
+                    </button>
+                </div>
+                
+                <div class="tab-content active" id="overviewTab">
+                    <h2 class="tab-header">Chat Overview</h2>
+                    
+                    <div class="summary-card">
+                        <h3 class="summary-title"><i class="fas fa-star"></i> Conversation Summary</h3>
+                        <div class="summary-stats">
+                            <div class="summary-stat">
+                                <div class="summary-value" id="totalDays">0</div>
+                                <div class="summary-label">Days Talking</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-value" id="avgMessages">0</div>
+                                <div class="summary-label">Avg. Messages/Day</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-value" id="chatLevel">New</div>
+                                <div class="summary-label">Chat Level</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <button class="export-btn" onclick="exportToPDF()">
+                                <i class="fas fa-download"></i> Download Report as PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3><i class="fas fa-comments"></i> Total Messages</h3>
+                            <div class="stat-value" id="totalMessages">0</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userMessages">0</strong>
+                                    <span id="userName">You</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendMessages">0</strong>
+                                    <span id="friendName">Friend</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3><i class="fas fa-font"></i> Words Used</h3>
+                            <div class="stat-value" id="totalWords">0</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userWords">0</strong>
+                                    <span id="userName2">You</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendWords">0</strong>
+                                    <span id="friendName2">Friend</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3><i class="fas fa-keyboard"></i> Characters Typed</h3>
+                            <div class="stat-value" id="totalChars">0</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userChars">0</strong>
+                                    <span id="userName3">You</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendChars">0</strong>
+                                    <span id="friendName3">Friend</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3><i class="fas fa-smile"></i> Emojis Used</h3>
+                            <div class="stat-value" id="totalEmojis">0</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userEmojis">0</strong>
+                                    <span id="userName4">You</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendEmojis">0</strong>
+                                    <span id="friendName4">Friend</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Message Statistics Comparison</h3>
+                        <canvas id="statsChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3 class="chart-title"><i class="fas fa-clock"></i> Activity Timeline</h3>
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="emojisTab">
+                    <h2 class="tab-header">Emoji Analysis</h2>
+                    
+                    <div>
+                        <h3 id="userName5">Your Emojis</h3>
+                        <div class="emoji-container" id="userEmojisContainer"></div>
+                    </div>
+                    <div style="margin-top: 40px;">
+                        <h3 id="friendName5">Friend's Emojis</h3>
+                        <div class="emoji-container" id="friendEmojisContainer"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="messagesTab">
+                    <h2 class="tab-header">Message Analysis</h2>
+                    
+                    <div>
+                        <h3 id="userName6">Your Most Repeated Messages</h3>
+                        <div id="userMessagesContainer"></div>
+                    </div>
+                    <div style="margin-top: 40px;">
+                        <h3 id="friendName6">Friend's Most Repeated Messages</h3>
+                        <div id="friendMessagesContainer"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="wordsTab">
+                    <h2 class="tab-header">Word Analysis</h2>
+                    
+                    <div>
+                        <h3 id="userName7">Your Top Words</h3>
+                        <div class="words-container" id="userWordsContainer"></div>
+                    </div>
+                    <div style="margin-top: 40px;">
+                        <h3 id="friendName7">Friend's Top Words</h3>
+                        <div class="words-container" id="friendWordsContainer"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="activityTab">
+                    <h2 class="tab-header">Activity Analysis</h2>
+                    
+                    <h3><i class="fas fa-fire"></i> Chatting Streaks</h3>
+                    <div class="streaks-container" id="streaksContainer"></div>
+                    
+                    <h3 style="margin-top: 40px;"><i class="fas fa-pause"></i> Breaks in Conversation</h3>
+                    <div class="streaks-container" id="breaksContainer"></div>
+
+                    <div class="chart-container" style="margin-top: 40px;">
+                        <h3 class="chart-title"><i class="fas fa-calendar-alt"></i> Activity by Day of Week</h3>
+                        <canvas id="dayOfWeekChart"></canvas>
+                    </div>
+
+                    <div class="chart-container" style="margin-top: 40px;">
+                        <h3 class="chart-title"><i class="fas fa-hourglass-half"></i> Activity by Hour of Day</h3>
+                        <canvas id="hourOfDayChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="insightsTab">
+                    <h2 class="tab-header">Chat Insights</h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3><i class="fas fa-fire"></i> Longest Streak</h3>
+                            <div class="stat-value" id="longestStreak">0 days</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userLongestStreak">0</strong>
+                                    <span>Your Messages</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendLongestStreak">0</strong>
+                                    <span>Friend's Messages</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3><i class="fas fa-clock"></i> Most Active Time</h3>
+                            <div class="stat-value" id="mostActiveTime">Evening</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userActiveTime">Morning</strong>
+                                    <span>Your Peak</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendActiveTime">Evening</strong>
+                                    <span>Friend's Peak</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3><i class="fas fa-calendar-day"></i> Most Active Day</h3>
+                            <div class="stat-value" id="mostActiveDay">Saturday</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userActiveDay">Friday</strong>
+                                    <span>Your Peak</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendActiveDay">Sunday</strong>
+                                    <span>Friend's Peak</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3><i class="fas fa-heart"></i> Favorite Emoji</h3>
+                            <div class="stat-value" id="favoriteEmoji">😊</div>
+                            <div class="stat-comparison">
+                                <div class="user-stat">
+                                    <strong id="userFavoriteEmoji">😂</strong>
+                                    <span>Your Favorite</span>
+                                </div>
+                                <div class="friend-stat">
+                                    <strong id="friendFavoriteEmoji">❤️</strong>
+                                    <span>Friend's Favorite</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="wordcloudTab">
+                    <h2 class="tab-header">Word Cloud</h2>
+                    
+                    <div class="wordcloud-container">
+                        <canvas id="wordcloud-canvas"></canvas>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="export-btn" onclick="exportWordCloud()">
+                            <i class="fas fa-image"></i> Download Word Cloud as Image
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="padding: 30px; text-align: center; border-top: 1px solid var(--gray-light);">
+                    <button id="newAnalysisButton" class="btn" onclick="startNewAnalysis()" style="background: linear-gradient(135deg, #6c757d, #495057); max-width: 300px;">
+                        <i class="fas fa-redo"></i> Start New Analysis
+                    </button>
+                </div>
+            </div>
+
+            <div class="loading" id="loadingSection">
+                <div class="loading-spinner"></div>
+                <p>Analyzing your chat... This may take a moment</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Created by <a href="#">Muhammad Abdul Mannan</a> • <span id="currentYear"></span></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
